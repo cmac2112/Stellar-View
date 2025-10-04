@@ -318,7 +318,7 @@ export default function ViewPage() {
             <div ref={cesiumContainer} className="w-full h-full p-10" />
 
             {/* Control Panel */}
-            <div className="absolute top-4 left-4 bg-black/90 text-white p- rounded-lg space-y-3 max-w-sm shadow-xl border border-gray-700">
+            <div className="absolute top-4 left-4 bg-black/90 text-white rounded-lg space-y-3 max-w-sm shadow-xl border border-gray-700">
                 <h3 className="font-bold text-xl text-blue-400">NASA GIBS Earth Viewer</h3>
 
                 <div className="space-y-3">
