@@ -1,0 +1,434 @@
+import { useEffect, useRef, useState } from "react";
+import {
+    Viewer,
+    WebMapTileServiceImageryProvider,
+    Credit,
+    JulianDate,
+    Entity,
+    Cartesian2,
+    Cartesian3
+} from "cesium";
+import Layout from "../../Components/Layout.tsx";
+
+const GIBS_LAYERS = {
+    // GOES - 10 MINUTE updates! (Geostationary)
+    goes_east_geocolor: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GOES-East_ABI_GeoColor/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png",
+        matrix: "GoogleMapsCompatible_Level7",
+        layer: "GOES-East_ABI_GeoColor",
+        name: "GOES-East GeoColor (10min)",
+        format: "image/png",
+        maxLevel: 6,
+        description: "10-minute updates! Americas & Atlantic view",
+        temporal: "10min",
+    },
+    goes_west_geocolor: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/GOES-West_ABI_GeoColor/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png",
+        layer: "GOES-West_ABI_GeoColor",
+        name: "GOES-West GeoColor (10min)",
+        matrix: "GoogleMapsCompatible_Level7",
+        maxLevel: 6,
+        format: "image/jpeg",
+        description: "10-minute updates! Pacific & Americas view",
+        temporal: "10min",
+    },
+    // True Color - Most popular, near real-time
+    modis_terra: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.jpg",
+        layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
+        name: "MODIS Terra True Color",
+        matrix: "GoogleMapsCompatible_Level9",
+        maxLevel: 9,
+        format: "image/jpeg",
+        description: "Daily true color imagery (updated within 3 hours)",
+        temporal: "daily",
+    },
+    modis_aqua: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Aqua_CorrectedReflectance_TrueColor/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.jpg",
+        layer: "MODIS_Aqua_CorrectedReflectance_TrueColor",
+        name: "MODIS Aqua True Color",
+        matrix: "GoogleMapsCompatible_Level9",
+        maxLevel: 9,
+        format: "image/jpeg",
+        description: "Daily true color imagery from Aqua satellite",
+        temporal: "daily",
+    },
+    viirs_snpp: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.jpg",
+        layer: "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+        name: "VIIRS True Color (High Res)",
+        matrix: "GoogleMapsCompatible_Level9",
+        maxLevel: 9,
+        format: "image/jpeg",
+        description: "High resolution daily imagery (375m resolution)",
+        temporal: "daily",
+    },
+    // Snow and Ice
+    snow_cover: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_L3_Snow_Extent_8Day/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png",
+        layer: "MODIS_Terra_L3_Snow_Extent_8Day",
+        name: "Snow Cover (8-Day)",
+        matrix: "GoogleMapsCompatible_Level8",
+        maxLevel: 8,
+        format: "image/png",
+        description: "8-day composite snow extent",
+        temporal: "daily",
+    },
+    // Temperature
+    land_temp_day: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Land_Surface_Temp_Day/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png",
+        layer: "MODIS_Terra_Land_Surface_Temp_Day",
+        name: "Land Surface Temperature (Day)",
+        matrix: "GoogleMapsCompatible_Level7",
+        maxLevel: 7,
+        format: "image/png",
+        description: "Daily land surface temperature",
+        temporal: "daily",
+    },
+    // Fires and Thermal Anomalies
+    fires: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Thermal_Anomalies_All/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png",
+        layer: "MODIS_Terra_Thermal_Anomalies_All",
+        name: "Active Fires",
+        matrix: "GoogleMapsCompatible_Level9",
+        maxLevel: 9,
+        format: "image/png",
+        description: "Active fire detections",
+        temporal: "daily",
+    },
+    // Clouds
+    cloud_fraction: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_Cloud_Fraction_Day/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png",
+        layer: "MODIS_Terra_Cloud_Fraction_Day",
+        name: "Cloud Fraction",
+        matrix: "GoogleMapsCompatible_Level6",
+        maxLevel: 6,
+        format: "image/png",
+        description: "Daily cloud coverage",
+        temporal: "daily",
+    },
+    // Vegetation
+    ndvi: {
+        url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_NDVI_8Day/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.png",
+        layer: "MODIS_Terra_NDVI_8Day",
+        name: "Vegetation Index (NDVI)",
+        matrix: "GoogleMapsCompatible_Level7",
+        maxLevel: 7,
+        format: "image/png",
+        description: "8-day vegetation health index",
+        temporal: "daily",
+    },
+};
+
+export default function ViewPage() {
+    const cesiumContainer = useRef<HTMLDivElement | null>(null);
+    const [viewer, setViewer] = useState<Viewer | null>(null);
+    const [activeLayer, setActiveLayer] = useState<any>(null);
+    const [currentDate, setCurrentDate] = useState(() => {
+        // Default to yesterday (data usually available with 1 day delay)
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        return yesterday.toISOString().split('T')[0];
+    });
+    const [currentTime, setCurrentTime] = useState("12:00");
+    const [selectedLayerKey, setSelectedLayerKey] = useState<string>("goes_east_geocolor");
+
+    useEffect(() => {
+        if (!cesiumContainer.current) return;
+
+        const v = new Viewer(cesiumContainer.current, {
+            baseLayerPicker: false,
+            timeline: true,
+            animation: true,
+        });
+
+        // Configure clock for better date range
+        v.clock.startTime = JulianDate.fromIso8601("2000-01-01T00:00:00Z");
+        v.clock.stopTime = JulianDate.fromIso8601(new Date().toISOString());
+        v.clock.currentTime = JulianDate.fromIso8601(currentDate + "T" + currentTime + ":00Z");
+        v.clock.clockRange = 0; // Unbounded - allows scrubbing through entire range
+        v.clock.multiplier = 600; // 10 minutes per second for GOES data
+
+        v.entities.add({
+            name: "GOES-West (GOES-17)",
+            position: Cesium.Cartesian3.fromDegrees(
+                -137.2, // longitude (W = negative)
+                0,      // latitude (over equator)
+                35786000 // altitude in meters (~35,786 km)
+            ),
+            point: {
+                pixelSize: 12,
+                color: Cesium.Color.ORANGE,
+                outlineColor: Cesium.Color.WHITE,
+                outlineWidth: 2,
+            },
+            label: {
+                text: "GOES-West",
+                font: "14px sans-serif",
+                fillColor: Cesium.Color.WHITE,
+                pixelOffset: new Cesium.Cartesian2(0, -20),
+            }
+        })
+        v.entities.add({
+            name: "GOES-East (GOES-16)",
+            position: Cesium.Cartesian3.fromDegrees(
+                -75.2, // longitude (W = negative)
+                0,     // latitude (over equator)
+                35786000 // altitude in meters (~35,786 km)
+            ),
+            point: {
+                pixelSize: 12,
+                color: Cesium.Color.CYAN,
+                outlineColor: Cesium.Color.WHITE,
+                outlineWidth: 2,
+            },
+            label: {
+                text: "GOES-East",
+                font: "14px sans-serif",
+                fillColor: Cesium.Color.WHITE,
+                pixelOffset: new Cesium.Cartesian2(0, -20),
+            }
+        });
+
+        // Optional: fly the camera to it
+        //viewer.flyTo(goesEast);
+        setViewer(v);
+
+        return () => {
+            v.destroy();
+        };
+    }, []);
+
+    // Add or update layer when date or layer type changes
+    useEffect(() => {
+        if (!viewer) return;
+
+        // Remove existing layer if present
+        if (activeLayer) {
+            viewer.imageryLayers.remove(activeLayer);
+        }
+
+        const layerConfig = GIBS_LAYERS[selectedLayerKey as keyof typeof GIBS_LAYERS];
+
+        // For 10-minute data, format time as YYYY-MM-DDTHH:MM:SSZ
+        // For daily data, format as YYYY-MM-DD
+        let timeString;
+        if (layerConfig.temporal === "10min") {
+            timeString = `${currentDate}T${currentTime}:00Z`;
+            //snap time to 10 minute increments to avoid missing api call on 10 minute imagry
+            const dateObj = new Date(`${currentDate}T${currentTime}:00Z`);
+            const minutes = Math.floor(dateObj.getUTCMinutes() / 10) * 10;
+            const rounded = new Date(dateObj);
+            rounded.setUTCMinutes(minutes, 0, 0);
+            timeString = rounded.toISOString().split(".")[0] + "Z";
+            // → e.g. "2025-09-30T12:10:00Z"
+        } else {
+            timeString = currentDate;
+        }
+
+
+        const url = layerConfig.url.replace("{Time}", timeString);
+
+        const provider = new WebMapTileServiceImageryProvider({
+            url: url,
+            layer: layerConfig.layer,
+            style: "default",
+            tileMatrixSetID: layerConfig.matrix,
+            format: layerConfig.format,
+            credit: new Credit("NASA GIBS"),
+            maximumLevel: 6 // ← clamp here
+        });
+
+        const layer = viewer.imageryLayers.addImageryProvider(provider);
+        layer.alpha = 0.8;
+        setActiveLayer(layer);
+
+        // Update clock
+        viewer.clock.currentTime = JulianDate.fromIso8601(timeString);
+    }, [viewer, currentDate, selectedLayerKey]);
+
+    // Listen to Cesium clock changes and update layer accordingly
+    useEffect(() => {
+        if (!viewer) return;
+
+        const clockListener = viewer.clock.onTick.addEventListener((clock) => {
+            const julianDate = clock.currentTime;
+            const date = JulianDate.toDate(julianDate);
+            const dateString = date.toISOString().split('T')[0];
+            //const timeString = date.toISOString().split('T')[1].substring(0, 5); // HH:MM
+
+            const layerConfig = GIBS_LAYERS[selectedLayerKey as keyof typeof GIBS_LAYERS];
+
+            if (layerConfig.temporal === "10min") {
+                // For 10-minute data, round to nearest 10 minutes
+                const minutes = Math.floor(date.getMinutes() / 10) * 10;
+                const roundedTime = `${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+                if (dateString !== currentDate || roundedTime !== currentTime) {
+                    setCurrentDate(dateString);
+                    setCurrentTime(roundedTime);
+                }
+            } else {
+                // For daily data, only update if date changed
+                if (dateString !== currentDate) {
+                    setCurrentDate(dateString);
+                }
+            }
+        });
+
+        return () => {
+            if (clockListener) {
+                viewer.clock.onTick.removeEventListener(clockListener);
+            }
+        };
+    }, [viewer, currentDate, currentTime, selectedLayerKey]);
+
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCurrentDate(e.target.value);
+    };
+
+    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCurrentTime(e.target.value);
+    };
+
+    const handleLayerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedLayerKey(e.target.value);
+    };
+
+    const toggleLayer = () => {
+        if (activeLayer) {
+            activeLayer.show = !activeLayer.show;
+            setActiveLayer({...activeLayer});
+        }
+    };
+
+    const goToNow = () => {
+        const now = new Date();
+        setCurrentDate(now.toISOString().split('T')[0]);
+        const minutes = Math.floor(now.getMinutes() / 10) * 10;
+        setCurrentTime(`${String(now.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`);
+    };
+
+    const currentLayerInfo = GIBS_LAYERS[selectedLayerKey as keyof typeof GIBS_LAYERS];
+    const isTemporalLayer = currentLayerInfo.temporal === "10min";
+
+    return (
+        <Layout>
+        <div className="relative w-full h-screen bg-black">
+            <div ref={cesiumContainer} className="w-full h-full p-10" />
+
+            {/* Control Panel */}
+            <div className="absolute top-4 left-4 bg-black/90 text-white p- rounded-lg space-y-3 max-w-sm shadow-xl border border-gray-700">
+                <h3 className="font-bold text-xl text-blue-400">NASA GIBS Earth Viewer</h3>
+
+                <div className="space-y-3">
+                    <div>
+                        <label className="block text-sm font-medium mb-1">
+                            Imagery Layer:
+                        </label>
+                        <select
+                            value={selectedLayerKey}
+                            onChange={handleLayerChange}
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                        >
+                            <optgroup label="🔴 LIVE - 10 Minute Updates">
+                                <option value="goes_east_geocolor">GOES-East (Americas)</option>
+                                <option value="goes_west_geocolor">GOES-West (Pacific)</option>
+                            </optgroup>
+                            <optgroup label="True Color Imagery">
+                                <option value="modis_terra">MODIS Terra (Daily)</option>
+                                <option value="modis_aqua">MODIS Aqua (Daily)</option>
+                                <option value="viirs_snpp">VIIRS High Resolution (Daily)</option>
+                            </optgroup>
+                            <optgroup label="Snow & Ice">
+                                <option value="snow_cover">Snow Cover</option>
+                            </optgroup>
+                            <optgroup label="Temperature">
+                                <option value="land_temp_day">Land Temperature</option>
+                            </optgroup>
+                            <optgroup label="Fires & Hazards">
+                                <option value="fires">Active Fires</option>
+                            </optgroup>
+                            <optgroup label="Weather">
+                                <option value="cloud_fraction">Cloud Coverage</option>
+                            </optgroup>
+                            <optgroup label="Vegetation">
+                                <option value="ndvi">Vegetation Health (NDVI)</option>
+                            </optgroup>
+                        </select>
+                        <p className="text-xs text-gray-400 mt-1">
+                            {currentLayerInfo.description}
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1">
+                            Date:
+                        </label>
+                        <div className="flex gap-2">
+                            <input
+                                type="date"
+                                value={currentDate}
+                                onChange={handleDateChange}
+                                min="2000-01-01"
+                                max={new Date().toISOString().split('T')[0]}
+                                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                            />
+                            <button
+                                onClick={goToNow}
+                                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors text-sm"
+                            >
+                                Now
+                            </button>
+                        </div>
+                    </div>
+
+                    {isTemporalLayer && (
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Time (10-min intervals):
+                            </label>
+                            <input
+                                type="time"
+                                value={currentTime}
+                                onChange={handleTimeChange}
+                                step="600"
+                                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                            />
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={toggleLayer}
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 rounded transition-colors font-medium"
+                    >
+                        {activeLayer?.show ? "Hide Layer" : "Show Layer"}
+                    </button>
+                </div>
+
+                <div className="pt-2 border-t border-gray-700 text-xs text-gray-400">
+                    <p>Data: NASA GIBS</p>
+                    {isTemporalLayer ? (
+                        <p className="text-green-400 font-medium">⚡ Live: Updates every 10 minutes</p>
+                    ) : (
+                        <p>Updated within 3 hours of observation</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="absolute bottom-4 left-4 bg-black/80 text-white px-3 py-2 rounded text-xs max-w-xs">
+                <p className="font-medium text-blue-400">{currentLayerInfo.name}</p>
+                <p className="text-gray-300 mt-1">
+                    {isTemporalLayer ? `${currentDate} ${currentTime} UTC` : `Date: ${currentDate}`}
+                </p>
+                <p className="text-gray-400 text-[10px] mt-1">
+                    💡 Use the timeline below to scrub through time
+                </p>
+            </div>
+        </div>
+        </Layout>
+    );
+}
