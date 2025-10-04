@@ -1,1 +1,174 @@
 @import "tailwindcss";
+@layer components {
+    .button-component {
+        position: relative;
+        background-color: #222222;
+        border: none;
+        border-radius: 3rem;
+        min-width: 10rem;
+        min-height: 2.5rem;
+        max-height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        text-align: center;
+        font-size: 0.875rem;
+        padding: 0.75rem 1.5rem;
+        color: rgba(255, 255, 255, 0.87);
+        cursor: pointer;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1;
+    }
+    .button-component::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 5px;
+        height: 100%;
+        background-color: rgb(170, 79, 255);
+        border-top-left-radius: 3rem;
+        border-bottom-left-radius: 3rem;
+        z-index: -1;
+    }
+    .button-component::after {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 0;
+        width: 0;
+        height: 100%;
+        background-color: rgb(170, 79, 255);
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: -1;
+        border-top-right-radius: 3rem;
+        border-bottom-right-radius: 3rem;
+    }
+    .button-component:hover::after,
+    .button-component:active::after {
+        width: calc(100% - 5px);
+    }
+    .button-component:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
+    }
+    .button-component:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba(30, 144, 255, 0.4);
+    }
+    .button-component:focus {
+        outline: 2px solid #1E90FF;
+        outline-offset: 2px;
+    }
+    .button-component:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .button-component:disabled::after {
+        width: 0 !important;
+    }
+    @media (max-width: 480px) {
+        .button-component {
+            min-width: 12rem;
+            min-height: 3rem;
+            max-height: 3rem;
+            font-size: 0.8125rem;
+            padding: 0.875rem 1.25rem;
+            border-radius: 2.5rem;
+        }
+        .button-component::before {
+            width: 4px;
+            border-radius: 2.5rem 0 0 2.5rem;
+        }
+        .button-component::after {
+            left: 0px;
+            width: 0;
+            border-radius: 0 2.5rem 2.5rem 0;
+        }
+        .button-component:hover::after,
+        .button-component:active::after {
+            width: calc(100%);
+        }
+        .button-component:active {
+            transform: scale(0.98);
+            transition: transform 0.1s ease;
+        }
+    }
+    @media (min-width: 481px) and (max-width: 768px) {
+        .button-component {
+            min-width: 9rem;
+            min-height: 2.75rem;
+            max-height: 3.25rem;
+            font-size: 0.875rem;
+            padding: 0.8125rem 1.375rem;
+            border-radius: 2.75rem;
+        }
+        .button-component::before {
+            width: 4px;
+            border-radius: 2.75rem 0 0 2.75rem;
+        }
+        .button-component::after {
+            left: 0px;
+            border-radius: 0 2.75rem 2.75rem 0;
+        }
+        .button-component:hover::after,
+        .button-component:active::after {
+            width: calc(100%);
+        }
+        .button-component:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(30, 144, 255, 0.25);
+        }
+    }
+    @media (min-width: 769px) {
+        .button-component {
+            min-width: 11rem;
+            min-height: 2.5rem;
+            max-height: 3rem;
+            font-size: 0.9375rem;
+            padding: 0.875rem 1.75rem;
+            border-radius: 3rem;
+        }
+        .button-component::before {
+            width: 6px;
+            border-radius: 3rem 0 0 3rem;
+        }
+        .button-component::after {
+            left: 0px;
+            border-radius: 0 3rem 3rem 0;
+        }
+        .button-component:hover::after,
+        .button-component:active::after {
+            width: calc(100%);
+        }
+        .button-component:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(30, 144, 255, 0.3);
+        }
+        .button-component:active {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(30, 144, 255, 0.4);
+        }
+    }
+    @media (min-resolution: 192dpi) {
+        .button-component {
+            border-radius: 3.125rem;
+        }
+        .button-component::before,
+        .button-component::after {
+            border-radius: 3.125rem;
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .button-component,
+        .button-component::after {
+            transition: none;
+        }
+        .button-component:hover,
+        .button-component:active {
+            transform: none;
+        }
+    }
+}
