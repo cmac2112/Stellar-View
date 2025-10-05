@@ -32,3 +32,11 @@ Stellar view utilizes OpenSeaDragon and python libraries to allow near lossless 
 Design Considerations
 
 One of the biggest challenges in dealing with large datasets like this is the sheer amount of data volume that one machine must consume in order to display decent imagery to the screen. Have slow internet and you want to look at some satellite imagery this decade? HAH Good luck, it will be 2055 before one day of images load. Stellar View uses clever caching techniques to load images quicker, and while the user is inspecting some interesting formations on the planet, in the background Stellar View continuously loads new images in attempt to keep time scrubbing smooth on the satellite views. A number of UI elements gives the user control over their quality of picture to either increase/decrease quality according to one's internet connection speed
+
+# App Images
+
+<img width="2257" height="1202" alt="image" src="https://github.com/user-attachments/assets/83bf20e9-191f-4159-b91a-c3df22e5e788" />
+
+<img width="2548" height="1178" alt="image" src="https://github.com/user-attachments/assets/2bc19868-6ad2-46c5-b9cd-09d0fe609943" />
+
+<img width="2538" height="1254" alt="image" src="https://github.com/user-attachments/assets/a36adf65-ddbb-42c8-8553-fbc3505935d0" />
