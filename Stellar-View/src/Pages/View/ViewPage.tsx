@@ -8,22 +8,6 @@ import {
     Color
 } from "cesium";
 import * as Cesium from "cesium";
-const Moon_Layers = {
-// All LRO layers are static (temporal: "static")
-    lro_wac_global: {
-        // Global mosaic compiled from entire mission
-        temporal: "static", // No time component
-    },
-    lro_wac_color: {
-        // Color composite - fixed dataset
-        temporal: "static",
-    },
-    lro_lola_elevation: {
-        // Elevation map - doesn't change
-        temporal: "static",
-    },
-
-}
 const GIBS_LAYERS = {
     // GOES - 10 MINUTE updates! (Geostationary)
     goes_east_geocolor: {
@@ -163,6 +147,7 @@ export default function ViewPage() {
                 baseLayerPicker: false,
                 timeline: true,
                 animation: true,
+
             });
             viewerRef.current = v;
             v.camera.setView({
@@ -216,9 +201,7 @@ export default function ViewPage() {
                 }
             });
 
-
-
-// Add animated satellites
+                // Add animated satellites
             const createModisSatellite = (name: string, color: Cesium.Color, phaseOffset: number) => {
                 return v.entities.add({
                     name: name,
@@ -273,10 +256,8 @@ export default function ViewPage() {
                 });
             };
 
-// Terra: 10:30 AM descending node → 0° offset
             createModisSatellite("MODIS Terra", Cesium.Color.CYAN, 0);
 
-// Aqua: 1:30 PM ascending node → ~180 minutes offset
             createModisSatellite("MODIS Aqua", Cesium.Color.LIGHTBLUE, 180);
             // Configure clock for better date range
             v.clock.startTime = JulianDate.fromIso8601("2000-01-01T00:00:00Z");
@@ -287,70 +268,224 @@ export default function ViewPage() {
 
             setViewer(v);
         } else if (selectedPlanet === "mars") {
+            //3644333
             v = new Viewer(cesiumContainer.current, {
                 baseLayerPicker: false,
                 timeline: true,
                 animation: true,
+                homeButton: false,
+                geocoder: false,
+                sceneModePicker: false,
+                navigationHelpButton: true, // Show navigation help
             });
             viewerRef.current = v;
-            v.scene.globe = new Cesium.Globe(Cesium.Ellipsoid.MARS);
-            v.scene.backgroundColor = new Color(0.1, 0, 0.1, 1); // Dark reddish background
-            v.scene.globe.enableLighting = false;
+
+            v.scene.globe.show = false;
+            if(v.scene.skyAtmosphere != undefined) {
+                v.scene.skyAtmosphere.show = false;
+            }
+
+            // Store viewer reference for async closure
+            const marsViewer = v;
+
+            (async () => {
+                try {
+                    Cesium.Ion.defaultAccessToken = import.meta.env.VITE_ION_KEY;
+                    const moonTileset = await Cesium.Cesium3DTileset.fromIonAssetId(3644333);
+
+                    v.scene.primitives.add(moonTileset);
+
+                    marsViewer.scene.light = new Cesium.DirectionalLight({
+                        direction: new Cesium.Cartesian3(1, 0, 0)
+                    });
+
+
+                    const addMRO = () => {
+                        // MRO orbital parameters (approximate)
+                        const marsRadius = 3389500; // meters
+                        const altitude = 300000; // meters above Mars surface
+                        const inclination = Cesium.Math.toRadians(93); // near-polar orbit
+                        const orbitalPeriodMinutes = 112; // ~2 hours
+
+                        marsViewer.entities.add({
+                            name: "Mars Reconnaissance Orbiter (MRO)",
+                            position: new Cesium.CallbackProperty(() => {
+                                const time = marsViewer.clock.currentTime;
+                                const date = Cesium.JulianDate.toDate(time);
+                                const minutesSinceEpoch = (date.getTime() / 60000);
+                                const orbitalAngle = (minutesSinceEpoch / orbitalPeriodMinutes) * 2 * Math.PI;
+
+                                const radius = marsRadius + altitude;
+                                const xOrbit = radius * Math.cos(orbitalAngle);
+                                const yOrbit = radius * Math.sin(orbitalAngle);
+
+                                // Rotate for inclination (near-polar orbit)
+                                const x = xOrbit;
+                                const y = yOrbit * Math.cos(inclination);
+                                const z = yOrbit * Math.sin(inclination);
+
+                                return new Cesium.Cartesian3(x, y, z);
+                            }, false) as unknown as Cesium.PositionProperty,
+                            point: {
+                                pixelSize: 10,
+                                color: Cesium.Color.RED,
+                                outlineColor: Cesium.Color.WHITE,
+                                outlineWidth: 2,
+                            },
+                            label: {
+                                text: "MRO",
+                                font: "12px sans-serif",
+                                fillColor: Cesium.Color.WHITE,
+                                pixelOffset: new Cesium.Cartesian2(0, -20),
+                                showBackground: true,
+                                backgroundColor: Cesium.Color.BLACK.withAlpha(0.7),
+                            }
+                        });
+                    };
+
+// Call addMRO() after the Mars tileset is loaded
+                    addMRO();
+
+                    // Fly to the tileset once loaded
+                    await marsViewer.flyTo(moonTileset, {
+                        offset: new Cesium.HeadingPitchRange(
+                            0,                    // heading
+                            Cesium.Math.toRadians(-30), // pitch (look down 30°)
+                            moonTileset.boundingSphere.radius * 2.5 // distance (2.5x radius)
+                        ),
+                        duration: 2
+                    });
+
+                } catch (error) {
+                    console.error('Failed to load Moon 3D tileset:', error);
+                }
+            })();
+            v.scene.screenSpaceCameraController.enableRotate = true;
+            v.scene.screenSpaceCameraController.enableZoom = true;
+            v.scene.screenSpaceCameraController.enableTilt = true;
+            v.scene.screenSpaceCameraController.enableLook = true;
+
+            v.scene.screenSpaceCameraController.minimumZoomDistance = 0;
+            v.scene.screenSpaceCameraController.maximumZoomDistance = 10000000;
+
+            v.scene.backgroundColor = new Color(0.05, 0.05, 0.1, 1);
             v.camera.setView({
-                destination: Cartesian3.fromDegrees(0, 0, 20000000), // Zoomed out to see the whole Earth
+                destination: Cartesian3.fromDegrees(0, 0, 50000),
                 orientation: {
                     heading: 0,
                     pitch: -Math.PI / 2,
                     roll: 0
                 }
             });
-            // Configure clock for better date range
-            v.clock.startTime = JulianDate.fromIso8601("2000-01-01T00:00:00Z");
-            v.clock.stopTime = JulianDate.fromIso8601(new Date().toISOString());
-            v.clock.currentTime = JulianDate.fromIso8601(currentDate + "T" + currentTime + ":00Z");
-            v.clock.clockRange = 0; // Unbounded - allows scrubbing through entire range
-            v.clock.multiplier = 600; // 10 minutes per second for GOES data
-
-
-
-            // Optional: fly the camera to it
-            //viewer.flyTo(goesEast);
             setViewer(v);
         } else if (selectedPlanet === "moon") {
             v = new Viewer(cesiumContainer.current, {
                 baseLayerPicker: false,
                 timeline: true,
                 animation: true,
+                homeButton: false,
+                geocoder: false,
+                sceneModePicker: false,
+                navigationHelpButton: true, // Show navigation help
             });
             viewerRef.current = v;
-            v.scene.moon = new Cesium.Moon();
-            v.scene.moon.textureUrl = 'https://cesium.com/downloads/cesiumjs/releases/1.104/Build/Cesium/Assets/Textures/Moon.jpg';
-            v.scene.backgroundColor = new Color(0.05, 0.05, 0.1, 1); // Dark bluish background
-            v.scene.globe.enableLighting = false;
+
+            v.scene.globe.show = false;
+            if(v.scene.skyAtmosphere != undefined) {
+                v.scene.skyAtmosphere.show = false;
+            }
+
+            // Store viewer reference for async closure
+            const moonViewer = v;
+
+            (async () => {
+                try {
+                    Cesium.Ion.defaultAccessToken = import.meta.env.VITE_ION_KEY;
+                    const moonTileset = await Cesium.Cesium3DTileset.fromIonAssetId(2684829);
+
+                    v.scene.primitives.add(moonTileset);
+
+                    moonViewer.scene.light = new Cesium.DirectionalLight({
+                        direction: new Cesium.Cartesian3(1, 0, 0)
+                    });
+
+                    // Fly to the tileset once loaded
+                    await moonViewer.flyTo(moonTileset, {
+                        offset: new Cesium.HeadingPitchRange(
+                            0,                    // heading
+                            Cesium.Math.toRadians(-30), // pitch (look down 30°)
+                            moonTileset.boundingSphere.radius * 2.5 // distance (2.5x radius)
+                        ),
+                        duration: 2
+                    });
+
+                } catch (error) {
+                    console.error('Failed to load Moon 3D tileset:', error);
+                }
+            })();
+            v.scene.screenSpaceCameraController.enableRotate = true;
+            v.scene.screenSpaceCameraController.enableZoom = true;
+            v.scene.screenSpaceCameraController.enableTilt = true;
+            v.scene.screenSpaceCameraController.enableLook = true;
+
+            v.scene.screenSpaceCameraController.minimumZoomDistance = 0;
+            v.scene.screenSpaceCameraController.maximumZoomDistance = 10000000;
+
+            v.scene.backgroundColor = new Color(0.05, 0.05, 0.1, 1);
             v.camera.setView({
-                destination: Cartesian3.fromDegrees(0, 0, 20000000), // Zoomed out to see the whole Earth
+                destination: Cartesian3.fromDegrees(0, 0, 50000),
                 orientation: {
                     heading: 0,
                     pitch: -Math.PI / 2,
                     roll: 0
                 }
             });
-            // Configure clock for better date range
-            v.clock.startTime = JulianDate.fromIso8601("2000-01-01T00:00:00Z");
-            v.clock.stopTime = JulianDate.fromIso8601(new Date().toISOString());
-            v.clock.currentTime = JulianDate.fromIso8601(currentDate + "T" + currentTime + ":00Z");
-            v.clock.clockRange = 0; // Unbounded - allows scrubbing through entire range
-            v.clock.multiplier = 600; // 10 minutes per second for GOES data
+            const addLRO = () => {
+                // LRO orbital parameters (approximate)
+                const lunarRadius = 1737400; // meters
+                const altitude = 80000; // meters above lunar surface
+                const inclination = Cesium.Math.toRadians(90); // polar orbit
+                const orbitalPeriodMinutes = 119; // ~2 hours - sped up for demo to 5 minutes
 
+                moonViewer.entities.add({
+                    name: "Lunar Reconnaissance Orbiter (LRO)",
+                    position: new Cesium.CallbackProperty(() => {
+                        const time = moonViewer.clock.currentTime;
+                        const date = Cesium.JulianDate.toDate(time);
+                        const minutesSinceEpoch = (date.getTime() / 60000);
+                        const orbitalAngle = (minutesSinceEpoch / orbitalPeriodMinutes) * 2 * Math.PI;
 
+                        const radius = lunarRadius + altitude;
+                        const xOrbit = radius * Math.cos(orbitalAngle);
+                        const yOrbit = radius * Math.sin(orbitalAngle);
 
-            // Optional: fly the camera to it
-            //viewer.flyTo(goesEast);
+                        // Rotate for inclination (polar orbit)
+                        const x = xOrbit;
+                        const y = yOrbit * Math.cos(inclination);
+                        const z = yOrbit * Math.sin(inclination);
+
+                        return new Cesium.Cartesian3(x, y, z);
+                    }, false) as unknown as Cesium.PositionProperty,
+                    point: {
+                        pixelSize: 10,
+                        color: Cesium.Color.YELLOW,
+                        outlineColor: Cesium.Color.WHITE,
+                        outlineWidth: 2,
+                    },
+                    label: {
+                        text: "LRO",
+                        font: "12px sans-serif",
+                        fillColor: Cesium.Color.WHITE,
+                        pixelOffset: new Cesium.Cartesian2(0, -20),
+                        showBackground: true,
+                        backgroundColor: Cesium.Color.BLACK.withAlpha(0.7),
+                    }
+                });
+            };
+
+            addLRO();
             setViewer(v);
         }
-
-
-
         return () => {
             viewerRef.current = null;
             v.destroy();
@@ -397,34 +532,12 @@ export default function ViewPage() {
                 credit: new Credit("NASA GIBS"),
                 maximumLevel: 6 // ← clamp here
             });
-        }else if(selectedPlanet === "moon"){
-            provider = new WebMapTileServiceImageryProvider({
-                url: `https://wms.lroc.asu.edu/lroc/view?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&LAYER=${selectedLayerKey}&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={TileMatrix}&TILEROW={TileRow}&TILECOL={TileCol}&FORMAT=image/jpeg`,
-                layer: selectedLayerKey,
-                style: "default",
-                tileMatrixSetID: "GoogleMapsCompatible",
-                format: "image/jpeg",
-                credit: new Credit("LRO WAC - NASA/GSFC/Arizona State University"),
-                maximumLevel: 7 // ← clamp here
 
-            })
-        }else{
-            // Mars - currently no temporal layers available, so just load a static high-res basemap
-            provider = new WebMapTileServiceImageryProvider({
-                url: `https://wms.lroc.asu.edu/lroc/view?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&LAYER=${selectedLayerKey}&STYLE=default&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={TileMatrix}&TILEROW={TileRow}&TILECOL={TileCol}&FORMAT=image/jpeg`,
-                layer: selectedLayerKey,
-                style: "default",
-                tileMatrixSetID: "GoogleMapsCompatible",
-                format: "image/jpeg",
-                credit: new Credit("LRO WAC - NASA/GSFC/Arizona State University"),
-                maximumLevel: 7 // ← clamp here
-            });
+
+            const layer = viewer.imageryLayers.addImageryProvider(provider);
+            layer.alpha = 0.8;
+            setActiveLayer(layer);
         }
-
-        const layer = viewer.imageryLayers.addImageryProvider(provider);
-        layer.alpha = 0.8;
-        setActiveLayer(layer);
-
         // Update clock
         viewer.clock.currentTime = JulianDate.fromIso8601(timeString);
     }, [viewer, currentDate, selectedLayerKey]);
@@ -464,29 +577,29 @@ export default function ViewPage() {
                 try {
                     viewerRef.current.clock.onTick.removeEventListener(clockListener);
                 } catch (e) {
-                    console.log("Clock listener already cleaned up");
+                    console.log("Clock listener already cleaned up" + e);
                 }
             }
         };
 
     }, [viewer, currentDate, currentTime, selectedLayerKey]);
-
+/*
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCurrentDate(e.target.value);
     };
-
+*/
 
     const handleLayerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedLayerKey(e.target.value);
     };
-
+/*
     const toggleLayer = () => {
         if (activeLayer) {
             activeLayer.show = !activeLayer.show;
             setActiveLayer({...activeLayer});
         }
     };
-
+*/
     const HandleResolutionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         //resChangedRef.current = true;
         setResolution(e.target.value);
@@ -567,9 +680,20 @@ export default function ViewPage() {
                             </p>
                         </div>
                             ) : selectedPlanet === "mars" ? (
-                            <div>
-                                <p>placeholder</p>
-                            </div>
+                                <>
+                                <label className="block text-sm font-medium mb-1">
+                                    Imagery Layer:
+                                </label>
+                            <select
+                                value={selectedLayerKey}
+                                onChange={handleLayerChange}
+                                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                            >
+                                <optgroup label="Static Views - No Time Component">
+                                    <option value="Cesium-3D-tileset">Global mosaic</option>
+                                </optgroup>
+                            </select>
+                                </>
                         ) : selectedPlanet === "moon" ? (
                             <>
                                 <label className="block text-sm font-medium mb-1">
@@ -582,8 +706,6 @@ export default function ViewPage() {
                             >
                                 <optgroup label="Static Views - No Time Component">
                                     <option value="lro_wac_global">Global mosaic</option>
-                                    <option value="lro_wac_color">Color composite</option>
-                                    <option value="lro_lola_elevation">Elevation map</option>
                                 </optgroup>
                             </select>
                                 </>

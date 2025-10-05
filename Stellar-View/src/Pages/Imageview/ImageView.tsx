@@ -54,7 +54,7 @@ export default function ImageView() {
         return () => viewer.destroy();
     }, [urlentry]);
     */
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -91,6 +91,16 @@ export default function ImageView() {
 
     return (
         <Layout>
+            {loading ? (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-75 text-white p-4 rounded">
+                    Loading Image...
+                </div>
+            ) : null}
+            {error ? (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-600 bg-opacity-75 text-white p-4 rounded">
+                    {error}
+                </div>
+            ) : null}
         <div
             ref={viewerRef}
             style={{
