@@ -5,8 +5,7 @@ import {
     Credit,
     JulianDate,
     Cartesian3,
-    Color,
-    Ion
+    Color
 } from "cesium";
 //import { getFormattedTime} from "./Helpers.tsx";
 import Layout from "../../Components/Layout.tsx";

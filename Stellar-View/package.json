@@ -11,6 +11,8 @@
     "postinstall": "node -e \"const fs = require('fs'); const path = require('path'); const cesiumSource = './node_modules/cesium/Build/Cesium'; const cesiumDest = './public/cesium'; if (!fs.existsSync(cesiumDest)) { fs.mkdirSync(cesiumDest, { recursive: true }); fs.cpSync(cesiumSource, cesiumDest, { recursive: true }); }\""
   },
   "dependencies": {
+    "cesium": "^1.134.0",
+    "openseadragon": "^5.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "resium": "^1.19.0-beta.1"
@@ -20,6 +22,7 @@
     "@tailwindcss/postcss": "^4.1.14",
     "@tailwindcss/vite": "^4.1.14",
     "@types/node": "^24.6.0",
+    "@types/openseadragon": "^4.1.0",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@types/tailwindcss": "^3.0.11",
