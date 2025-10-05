@@ -147,7 +147,7 @@ export default function ViewPage() {
         return yesterday.toISOString().split('T')[0];
     });
     const [currentTime, setCurrentTime] = useState("12:00");
-    const [selectedLayerKey, setSelectedLayerKey] = useState<string>("goes_east_geocolor");
+    const [selectedLayerKey, setSelectedLayerKey] = useState<string>("viirs_snpp");
     const [resolution, setResolution] = useState<string>("medium");
 
     const [selectedPlanet, setSelectedPlanet] = useState<string>("earth");
@@ -422,9 +422,6 @@ export default function ViewPage() {
         setCurrentDate(e.target.value);
     };
 
-    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setCurrentTime(e.target.value);
-    };
 
     const handleLayerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedLayerKey(e.target.value);
