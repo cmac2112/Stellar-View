@@ -8,6 +8,8 @@ import hashlib
 
 app = Flask(__name__, static_folder="../Stellar-View/dist", static_url_path="/")
 
+#https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_2k.tif
+
 @app.route('/')
 def serve_dist():
     return send_from_directory(app.static_folder, "index.html")
@@ -15,8 +17,9 @@ CORS(app)
 
 # LRU Cache for converted images (max 10 images)
 image_cache = OrderedDict()
-MAX_CACHE_SIZE = 10
-
+MAX_CACHE_SIZE = 8
+# Reject files larger than this (bytes). 300MB = 300 * 1024 * 1024
+MAX_BYTES = 300 * 1024 * 1024
 def get_cache_key(url):
     """Generate a unique cache key from URL"""
     return hashlib.md5(url.encode()).hexdigest()
@@ -41,6 +44,16 @@ def convert_tiff():
         # Fetch TIFF from NASA
         response = requests.get(url, stream=True)
         response.raise_for_status()
+        
+        content_length = response.headers.get('Content-Length')
+        if content_length:
+            try:
+                if int(content_length) > MAX_BYTES:
+                    return jsonify({'error': 'Image exceeds 300MB limit'}), 413
+            except ValueError:
+                pass
+
+
 
         # Open with Pillow and convert to PNG
         img = Image.open(io.BytesIO(response.content))
@@ -65,15 +78,6 @@ def convert_tiff():
     except Exception as e:
         print(e)
         return jsonify({'error': str(e)}), 500
-
-@app.route('/cache-stats')
-def cache_stats():
-    """Endpoint to check cache status"""
-    return jsonify({
-        'cached_images': len(image_cache),
-        'max_cache_size': MAX_CACHE_SIZE,
-        'cache_keys': list(image_cache.keys())
-    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)

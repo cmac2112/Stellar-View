@@ -1,6 +1,6 @@
 import Layout from "../../Components/Layout.tsx";
 import Button from "../../Components/Button.tsx";
-import video from "../../assets/cesiumvideo.mp4";
+import video from "../../assets/stellar2.mp4";
 import { useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
 

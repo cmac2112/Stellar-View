@@ -141,6 +141,11 @@ export default function ViewPage() {
         if (!cesiumContainer.current) return;
         let v: Viewer;
 
+        (async () => {
+            const provider = await Cesium.createWorldImageryAsync();
+            v.imageryLayers.addImageryProvider(provider);
+        })();
+
 
         if (selectedPlanet === "earth") {
             v = new Viewer(cesiumContainer.current, {
@@ -265,6 +270,7 @@ export default function ViewPage() {
             v.clock.currentTime = JulianDate.fromIso8601(currentDate + "T" + currentTime + ":00Z");
             v.clock.clockRange = 0;
             v.clock.multiplier = 600;
+
 
             setViewer(v);
         } else if (selectedPlanet === "mars") {

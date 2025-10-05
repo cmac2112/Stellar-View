@@ -2,69 +2,39 @@ import { useEffect, useRef, useState } from "react";
 import OpenSeadragon from "openseadragon";
 import Layout from "../../Components/Layout";
 //maybe download all the images i need and serve them myself through flask
+type Label = {
+    x: number;
+    y: number;
+    text: string;
+};
 
+function getLabels(url: string): Label[] {
+    const data = localStorage.getItem(`labels_${url}`);
+    return data ? JSON.parse(data) : [];
+}
+
+function saveLabels(url: string, labels: Label[]) {
+    localStorage.setItem(`labels_${url}`, JSON.stringify(labels));
+}
 export default function ImageView() {
     const viewerRef = useRef(null);
     //const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/dynamicimage/assets/science/missions/hubble/galaxies/andromeda/Hubble_M31Mosaic_2025_42208x9870_STScI-01JGY8MZB6RAYKZ1V4CHGN37Q6.jpg");
     const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26276/PIA26276.tif");
 
-    //useEffect(() => {
-       // if (!viewerRef.current) return;
-/*
-        const viewer = OpenSeadragon({
-            element: viewerRef.current,
-            prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
-            tileSources: {
-                type: "image",
-                url: urlentry,
-            },
-            showNavigator: true,
-            showRotationControl: true,
-            zoomPerScroll: 1.2,
-            minZoomLevel: 1,
-            maxZoomLevel: 10,
-        });
-
-
-        const url = "http://localhost:5000/proxy?url=" + encodeURIComponent("https://svs.gsfc.nasa.gov/vis/a000000/a005300/a005319/frames/3840x2160_16x9_30p/tiff/");
-        const checkTiffSupport = async () => {
-            const img = new Image();
-            return new Promise((resolve) => {
-                img.onload = () => resolve(true);
-                img.onerror = () => resolve(false);
-                img.src = 'data:image/tiff;base64,SUkqAA=='; // Minimal TIFF
-            });
-        };
-        checkTiffSupport().then((isSupported) => {
-            if (!isSupported) {
-                alert("TIFF images are not supported in this browser. Please use a different browser.");
-            }
-        });
-
-// If supported, use directly
-        const viewer = OpenSeadragon({
-            element: viewerRef.current,
-            prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
-            tileSources: {
-                type: "image",
-                url: url, // Direct TIFF URL
-            },
-        });
-
-        return () => viewer.destroy();
-    }, [urlentry]);
-    */
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const osdViewerRef = useRef<any>(null);
+    const [labels, setLabels] = useState<Label[]>([]);
 
+
+    // Initialize viewer only when URL changes
     useEffect(() => {
         if (!viewerRef.current) return;
 
         setLoading(true);
         setError(null);
 
-        // Convert TIFF via Flask backend
-        const convertedUrl = `http://localhost:5000/convert-tiff?url=${encodeURIComponent(urlentry)}`;
+        const convertedUrl = `${import.meta.env.VITE_DOMAIN_LOCAL ?? import.meta.env.VITE_DOMAIN_PROD}/convert-tiff?url=${encodeURIComponent(urlentry)}`;
 
         const viewer = OpenSeadragon({
             element: viewerRef.current,
@@ -80,15 +50,92 @@ export default function ImageView() {
             maxZoomLevel: 10,
         });
 
-        viewer.addHandler('open', () => setLoading(false));
+        osdViewerRef.current = viewer;
+
+        viewer.addHandler('open', () => {
+            setLoading(false);
+            // Draw existing labels
+            getLabels(urlentry).forEach(label => {
+                drawLabel(viewer, label);
+            });
+        });
+
         viewer.addHandler('open-failed', () => {
             setError('Failed to load image');
             setLoading(false);
         });
 
-        return () => viewer.destroy();
+        // Handle click to add label
+        /*
+        viewer.addHandler('canvas-click', function(event: any) {
+            const webPoint = event.position;
+            const viewportPoint = viewer.viewport.pointFromPixel(webPoint);
+            const imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+            const text = prompt("Enter label for this point:");
+            if (text) {
+                const newLabel = { x: imagePoint.x, y: imagePoint.y, text };
+                const updatedLabels = [...getLabels(urlentry), newLabel];
+                setLabels(updatedLabels);
+                saveLabels(urlentry, updatedLabels);
+                drawLabel(viewer, newLabel);
+            }
+        });
+*/
+        return () => {
+            viewer.destroy();
+            osdViewerRef.current = null;
+        };
     }, [urlentry]);
 
+    // Update overlays when labels change (without reloading image)
+    useEffect(() => {
+        const viewer = osdViewerRef.current;
+        if (!viewer) return;
+
+        // Remove all overlays
+        viewer.clearOverlays();
+
+        // Draw all labels
+        labels.forEach(label => {
+            drawLabel(viewer, label);
+        });
+    }, [labels]);
+// Draw label marker and text
+    function drawLabel(viewer: any, label: Label) {
+        const overlayId = `label_${label.x}_${label.y}_${label.text}`;
+        const marker = document.createElement("div");
+        marker.style.position = "absolute";
+        marker.style.display = "block";
+        marker.style.background = "red";
+        marker.style.width = "12px";
+        marker.style.height = "12px";
+        marker.style.borderRadius = "50%";
+        marker.style.zIndex = "1000";
+        marker.title = label.text;
+
+        const textDiv = document.createElement("div");
+        textDiv.style.position = "absolute";
+        textDiv.style.color = "white";
+        textDiv.style.background = "rgba(0,0,0,0.7)";
+        textDiv.style.padding = "2px 6px";
+        textDiv.style.borderRadius = "4px";
+        textDiv.style.top = "14px";
+        marker.style.zIndex = "1000";
+        textDiv.innerText = label.text;
+        const canvas = document.getElementsByClassName("openseadragon-canvas")[0];
+        if (!canvas) return;
+        const container = document.createElement("div");
+        container.appendChild(marker);
+        container.appendChild(textDiv);
+
+        canvas.appendChild(container);
+        viewer.addOverlay({
+            element: container,
+            location: new OpenSeadragon.Point(label.x, label.y),
+            placement: OpenSeadragon.Placement.CENTER
+        });
+    }
     return (
         <Layout>
             {loading ? (
@@ -109,7 +156,7 @@ export default function ImageView() {
                 background: "#000",
             }}
         />
-        <div className="bg-black bg-opacity-50 p-4 flex justify-center items-center">
+        <div className="bg-black bg-opacity-50 p-4 flex justify-center items-center pointer-events-auto">
             <input
                 type="text"
                 value={urlentry}
