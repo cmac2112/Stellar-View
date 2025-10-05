@@ -1,4 +1,4 @@
-import React, {Suspense} from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, } from "react-router-dom";
 import Landing from "./Pages/Landing/Landing.tsx";
 import './App.css'
@@ -10,7 +10,8 @@ function App() {
         <Router>
             <Routes>
                 <Route path="/" element={<Landing/>} />
-                <Route path="/view" element={<ViewPage/>} />
+                <Route path="/planet-view" element={<ViewPage/>} />
+                <Route path="/image-view" element={<ViewPage/>} />
             </Routes>
         </Router>
     )

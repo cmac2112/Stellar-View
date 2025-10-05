@@ -24,8 +24,9 @@ export default function Landing () {
             </h2>
             <div className={`transition-opacity duration-1500 ${showHeading ? "opacity-100" : "opacity-0"}`}>
                 {/* Place Button components here */}
-                <div className={`transition-opacity duration-1500 ${showHeading ? "opacity-100" : "opacity-0"}`}>
-                    <Button materialIconName="Explore" label="Begin" OnClickCallback={() => navigate("/view")} />
+                <div className={`transition-opacity flex gap-10 duration-1500 ${showHeading ? "opacity-100" : "opacity-0"}`}>
+                    <Button materialIconName="Explore" label="Explore Live Sattelite Views" OnClickCallback={() => navigate("/planet-view")} />
+                    <Button materialIconName="Explore" label="Explore NASA Image Sets" OnClickCallback={() => navigate("/image-view")} />
                 </div>
             </div>
             <div id="hero-video-container">
