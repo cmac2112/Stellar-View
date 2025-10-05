@@ -159,7 +159,6 @@ export default function ViewPage() {
     useEffect(() => {
         if (!cesiumContainer.current) return;
         let v: Viewer;
-       //Cesium.Ion.defaultAccessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiNWRkNjFmOS1hNDA4LTQ2ZDgtODhmZC0wZTRmNDViNGRjYmYiLCJpZCI6MzQ1NzgyLCJpYXQiOjE3NTkxOTk4MDh9.wuaf6813XPF4-iLFbKIXGHey4mTKpC5E0cnrGYMY7YU")
 
 
         if (selectedPlanet === "earth") {
