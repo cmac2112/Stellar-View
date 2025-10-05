@@ -9,3 +9,4 @@ export const getFormattedTime = (date: Date, layerConfig) => {
         return date.toISOString().split('T')[0];
     }
 };
+
