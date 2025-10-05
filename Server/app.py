@@ -1,4 +1,4 @@
-from flask import Flask, send_file, request, jsonify
+from flask import Flask, send_file, request, jsonify, send_from_directory
 from PIL import Image
 import io
 import requests
@@ -6,7 +6,11 @@ from flask_cors import CORS
 from collections import OrderedDict
 import hashlib
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../Stellar-View/dist", static_url_path="/")
+
+@app.route('/')
+def serve_dist():
+    return send_from_directory(app.static_folder, "index.html")
 CORS(app)
 
 # LRU Cache for converted images (max 10 images)

@@ -14,7 +14,8 @@ export default defineConfig({
                 target: 'https://gibs.earthdata.nasa.gov',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/gibs/, ''),
-            }
+            },
+
         }
     },
     resolve: {
