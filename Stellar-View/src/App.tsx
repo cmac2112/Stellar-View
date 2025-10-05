@@ -10,7 +10,8 @@ function App() {
         <Router>
             <Routes>
                 <Route path="/" element={<Landing/>} />
-                <Route path="/view" element={<ViewPage/>} />
+                <Route path="/planet-view" element={<ViewPage/>} />
+                <Route path="/image-view" element={<ViewPage/>} />
             </Routes>
         </Router>
     )
