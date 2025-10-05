@@ -12,19 +12,22 @@ function getLabels(url: string): Label[] {
     const data = localStorage.getItem(`labels_${url}`);
     return data ? JSON.parse(data) : [];
 }
-
+/*
 function saveLabels(url: string, labels: Label[]) {
     localStorage.setItem(`labels_${url}`, JSON.stringify(labels));
 }
+*/
+
 export default function ImageView() {
     const viewerRef = useRef(null);
     //const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/dynamicimage/assets/science/missions/hubble/galaxies/andromeda/Hubble_M31Mosaic_2025_42208x9870_STScI-01JGY8MZB6RAYKZ1V4CHGN37Q6.jpg");
-    const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26276/PIA26276.tif");
+    //const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26276/PIA26276.tif");
+    const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/content/dam/science/missions/hubble/releases/2025/01/STScI-01JGY8ZEDHYMGM99RF1RQ45YWY.tif/jcr:content/renditions/Reduced%20Res%202.png");
 
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const osdViewerRef = useRef<any>(null);
-    const [labels, setLabels] = useState<Label[]>([]);
+    //const [labels, setLabels] = useState<Label[]>([]);
 
 
     // Initialize viewer only when URL changes
@@ -89,6 +92,7 @@ export default function ImageView() {
     }, [urlentry]);
 
     // Update overlays when labels change (without reloading image)
+    /*
     useEffect(() => {
         const viewer = osdViewerRef.current;
         if (!viewer) return;
@@ -101,9 +105,11 @@ export default function ImageView() {
             drawLabel(viewer, label);
         });
     }, [labels]);
+    */
+
 // Draw label marker and text
     function drawLabel(viewer: any, label: Label) {
-        const overlayId = `label_${label.x}_${label.y}_${label.text}`;
+        //const overlayId = `label_${label.x}_${label.y}_${label.text}`;
         const marker = document.createElement("div");
         marker.style.position = "absolute";
         marker.style.display = "block";

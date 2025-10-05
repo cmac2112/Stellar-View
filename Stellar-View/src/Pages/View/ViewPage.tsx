@@ -141,10 +141,7 @@ export default function ViewPage() {
         if (!cesiumContainer.current) return;
         let v: Viewer;
 
-        (async () => {
-            const provider = await Cesium.createWorldImageryAsync();
-            v.imageryLayers.addImageryProvider(provider);
-        })();
+
 
 
         if (selectedPlanet === "earth") {
@@ -154,6 +151,10 @@ export default function ViewPage() {
                 animation: true,
 
             });
+            (async () => {
+                const provider = await Cesium.createWorldImageryAsync();
+                v.imageryLayers.addImageryProvider(provider);
+            })();
             viewerRef.current = v;
             v.camera.setView({
                 destination: Cartesian3.fromDegrees(0, 0, 20000000), // Zoomed out to see the whole Earth
