@@ -7,8 +7,6 @@ import {
     Cartesian3,
     Color
 } from "cesium";
-//import { getFormattedTime} from "./Helpers.tsx";
-import Layout from "../../Components/Layout.tsx";
 import * as Cesium from "cesium";
 const Moon_Layers = {
 // All LRO layers are static (temporal: "static")
@@ -167,7 +165,6 @@ export default function ViewPage() {
                 animation: true,
             });
             viewerRef.current = v;
-            v.scene.globe.enableLighting = true;
             v.camera.setView({
                 destination: Cartesian3.fromDegrees(0, 0, 20000000), // Zoomed out to see the whole Earth
                 orientation: {
@@ -176,10 +173,8 @@ export default function ViewPage() {
                     roll: 0
                 }
             });
-            v.scene.globe.enableLighting = true;
-            v.scene.globe.atmosphereLightIntensity = 0.5;
+
             v.scene.globe.backFaceCulling = true;
-            v.scene.globe.atmosphereBrightnessShift = 0.5;
             v.entities.add({
                 name: "GOES-West (GOES-17)",
                 position: Cesium.Cartesian3.fromDegrees(
@@ -220,17 +215,76 @@ export default function ViewPage() {
                     pixelOffset: new Cesium.Cartesian2(0, -20),
                 }
             });
+
+
+
+// Add animated satellites
+            const createModisSatellite = (name: string, color: Cesium.Color, phaseOffset: number) => {
+                return v.entities.add({
+                    name: name,
+                    position: new Cesium.CallbackProperty(() => {
+                        const time = v.clock.currentTime;
+                        const date = Cesium.JulianDate.toDate(time);
+
+                        // Orbital period: 98.8 minutes
+                        const orbitalPeriodMinutes = 98.8;
+                        const minutesSinceEpoch = (date.getTime() / 60000) + phaseOffset;
+                        const orbitalAngle = (minutesSinceEpoch / orbitalPeriodMinutes) * 2 * Math.PI;
+
+                        // Earth rotation - satellites drift westward due to sun-synchronous orbit
+                        const earthRotationRate = (2 * Math.PI) / (24 * 60); // radians per minute
+                        const earthRotation = minutesSinceEpoch * earthRotationRate;
+
+                        const altitude = 705000;
+                        const earthRadius = 6371000;
+                        const inclination = Cesium.Math.toRadians(98.2);
+                        const radius = earthRadius + altitude;
+
+                        // Position in orbital plane
+                        const xOrbit = radius * Math.cos(orbitalAngle);
+                        const yOrbit = radius * Math.sin(orbitalAngle);
+
+                        // Rotate for inclination
+                        const x = xOrbit;
+                        const y = yOrbit * Math.cos(inclination);
+                        const z = yOrbit * Math.sin(inclination);
+
+                        // Apply Earth rotation (rotate around Z-axis)
+                        const xFinal = x * Math.cos(-earthRotation) - y * Math.sin(-earthRotation);
+                        const yFinal = x * Math.sin(-earthRotation) + y * Math.cos(-earthRotation);
+                        const zFinal = z;
+
+                        return new Cesium.Cartesian3(xFinal, yFinal, zFinal);
+                    }, false) as unknown as Cesium.PositionProperty,
+                    point: {
+                        pixelSize: 10,
+                        color: color,
+                        outlineColor: Cesium.Color.WHITE,
+                        outlineWidth: 2,
+                    },
+                    label: {
+                        text: `${name}\n(EOS ${name === "MODIS Terra" ? "AM-1" : "PM-1"})`,
+                        font: "12px sans-serif",
+                        fillColor: Cesium.Color.WHITE,
+                        pixelOffset: new Cesium.Cartesian2(0, -20),
+                        showBackground: true,
+                        backgroundColor: Cesium.Color.BLACK.withAlpha(0.7),
+                    }
+                });
+            };
+
+// Terra: 10:30 AM descending node → 0° offset
+            createModisSatellite("MODIS Terra", Cesium.Color.CYAN, 0);
+
+// Aqua: 1:30 PM ascending node → ~180 minutes offset
+            createModisSatellite("MODIS Aqua", Cesium.Color.LIGHTBLUE, 180);
             // Configure clock for better date range
             v.clock.startTime = JulianDate.fromIso8601("2000-01-01T00:00:00Z");
             v.clock.stopTime = JulianDate.fromIso8601(new Date().toISOString());
             v.clock.currentTime = JulianDate.fromIso8601(currentDate + "T" + currentTime + ":00Z");
-            v.clock.clockRange = 0; // Unbounded - allows scrubbing through entire range
-            v.clock.multiplier = 600; // 10 minutes per second for GOES data
+            v.clock.clockRange = 0;
+            v.clock.multiplier = 600;
 
-
-
-            // Optional: fly the camera to it
-            //viewer.flyTo(goesEast);
             setViewer(v);
         } else if (selectedPlanet === "mars") {
             v = new Viewer(cesiumContainer.current, {
