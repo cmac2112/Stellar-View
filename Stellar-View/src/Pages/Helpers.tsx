@@ -1,7 +1,7 @@
 // Function to format time based on layer type
-import type {GIBSLayerConfig} from "./ViewPage.tsx";
 
-export const getFormattedTime = (date: Date, layerConfig: GIBSLayerConfig) => {
+
+export const getFormattedTime = (date: Date, layerConfig: any) => {
     if (layerConfig.temporal === "10min") {
         const minutes = Math.floor(date.getUTCMinutes() / 10) * 10;
         const rounded = new Date(date);
