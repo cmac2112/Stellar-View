@@ -69,6 +69,15 @@ export default function ImageView() {
             setLoading(false);
             // Clear any existing overlays (important when switching images)
             try { viewer.clearOverlays(); } catch (e) { /* ignore */ }
+            // Remove any overlays we appended to the top-level root so they don't persist across images
+            try {
+                if (overlaysRef.current && overlaysRef.current.length) {
+                    overlaysRef.current.forEach(o => {
+                        try { o.element.remove(); } catch (e) { /* ignore */ }
+                    });
+                    overlaysRef.current = [];
+                }
+            } catch (e) { /* ignore */ }
             // Draw existing labels
             getLabels(urlentry).forEach(label => {
                 drawLabel(viewer, label);
@@ -105,6 +114,22 @@ export default function ImageView() {
             })
         });
         return () => {
+            // Clean up overlays we created
+            try {
+                if (overlaysRef.current && overlaysRef.current.length) {
+                    overlaysRef.current.forEach(o => { try { o.element.remove(); } catch (e) { /* ignore */ } });
+                    overlaysRef.current = [];
+                }
+            } catch (e) { /* ignore */ }
+
+            // Remove overlay root from DOM so overlays don't persist when leaving the page
+            try {
+                if (overlayRootRef.current) {
+                    overlayRootRef.current.remove();
+                    overlayRootRef.current = null;
+                }
+            } catch (e) { /* ignore */ }
+
             viewer.destroy();
             osdViewerRef.current = null;
         };
