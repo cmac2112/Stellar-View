@@ -1,5 +1,5 @@
 import MaterialIcon from "./MaterialIcon.tsx";
-import Menu from "./Menu.tsx";
+import  Menu from "./Menu.tsx";
 import {useState} from "react";
 interface LayoutProps {
     children?: React.ReactNode,
