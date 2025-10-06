@@ -1,4 +1,7 @@
 # Project Stellar-View
+
+# up to date code is on production branch, ran into some weird "production only" bugs and did a lot of stupid reverts in my delerious state of no sleep
+
 ## Summary
 Stellar View brings satellite imagery and tools together to allow for
 exploring large datasets provided by our lovely NASA folks.
