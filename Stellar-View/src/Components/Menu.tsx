@@ -36,12 +36,12 @@ const Menu:React.FC<MenuProps> = ({
     return (
         <div className='menu-modal'>
             <div className='button-container flex flex-col gap-2'>
-                <Button className='w-full' label="Home" iconPosition='right' OnClickCallback={() => handleNavigation("/")} materialIconName='Work' />
-                <Button className='w-full' label="Big Image Viewer" iconPosition='right' OnClickCallback={() => handleNavigation("/image-view")} materialIconName='Work' />
-                <Button className='w-full' label="Satellite View" iconPosition='right' OnClickCallback={() => handleNavigation("/planet-view")} materialIconName='Work' />
-                <Button className='w-full' label="Experimental View" iconPosition='right' OnClickCallback={() => handleNavigation("/experimental-view")} materialIconName='Work' />
-                <Button className='w-full' label="Gitub Repository" iconPosition='right' OnClickCallback={() => window.open("https://github.com/cmac2112/Stellar-View", "_blank")}  materialIconName='Work' />
-                <Button className='w-full' label="Close" iconPosition='right' OnClickCallback={() => handleCloseMenu()} materialIconName='Work' />
+                <Button className='w-full' label="Home" iconPosition='right' OnClickCallback={() => handleNavigation("/")} materialIconName='home' />
+                <Button className='w-full' label="Big Image Viewer" iconPosition='right' OnClickCallback={() => handleNavigation("/image-view")} materialIconName='4k_plus' />
+                <Button className='w-full' label="Satellite View" iconPosition='right' OnClickCallback={() => handleNavigation("/planet-view")} materialIconName='satellite_alt' />
+                <Button className='w-full' label="Experimental View" iconPosition='right' OnClickCallback={() => handleNavigation("/experimental-view")} materialIconName='warning' />
+                <Button className='w-full' label="Gitub Repository" iconPosition='right' OnClickCallback={() => window.open("https://github.com/cmac2112/Stellar-View", "_blank")}  materialIconName='code' />
+                <Button className='w-full' label="Close" iconPosition='right' OnClickCallback={() => handleCloseMenu()} materialIconName='close' />
             </div>
         </div>
     )
