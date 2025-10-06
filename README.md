@@ -4,7 +4,7 @@
 
 ## Summary
 
-<a href="stellarview.us">Live link</a>
+<a href="https://stellarview.us">Live link</a>
 
 Stellar View brings satellite imagery and tools together to allow for
 exploring large datasets provided by our lovely NASA folks.
