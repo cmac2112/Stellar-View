@@ -232,8 +232,7 @@ export default function ImageView() {
                 />
             </div>
             <div className="flex flex-col w-full">
-                <p className="text-white">Double click to Mark POI's</p>
-          
+                <p className="text-white">Double click to Mark POI's in each image</p>
             </div>
             </div>
         </div>
