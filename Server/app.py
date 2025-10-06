@@ -8,6 +8,10 @@ import hashlib
 
 app = Flask(__name__, static_folder="../Stellar-View/dist", static_url_path="/")
 
+#hello testers and viewers, test the functionality of any url input into the image viewer with this url below or go find your own  < 300MB TIF to test
+#this could be improved in the future with some multithreading and chunk based loading of images but this is a hackathon so this will do for now
+#feel free to make isseues and suggestions
+
 #https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_2k.tif
 
 @app.route('/')
