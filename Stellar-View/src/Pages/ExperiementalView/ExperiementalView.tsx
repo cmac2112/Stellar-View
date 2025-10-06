@@ -250,7 +250,7 @@ export default function ExperimentalImageView() {
 
 
     // Preload imagery provider into cache
-    const preloadImagery = (timeString: string, layerConfig: GIBSLayerConfig) => {
+    const preloadImagery = (timeString: string, layerConfig: any) => {
         const cacheKey = `${layerConfig.layer}-${timeString}-${resolution}`;
 
         if (preloadCacheRef.current.has(cacheKey)) {
