@@ -12,6 +12,9 @@ function getLabels(url: string): Label[] {
     const data = localStorage.getItem(`labels_${url}`);
     return data ? JSON.parse(data) : [];
 }
+function saveLabels(url: string, labels: Label[]) {
+    localStorage.setItem(`labels_${url}`, JSON.stringify(labels));
+}
 /*
 function saveLabels(url: string, labels: Label[]) {
     localStorage.setItem(`labels_${url}`, JSON.stringify(labels));
@@ -20,6 +23,8 @@ function saveLabels(url: string, labels: Label[]) {
 
 export default function ImageView() {
     const viewerRef = useRef(null);
+    const overlayRootRef = useRef<HTMLElement | null>(null);
+    const overlaysRef = useRef<Array<{ label: Label; element: HTMLElement }>>([]);
     const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/content/dam/science/missions/hubble/releases/2025/01/STScI-01JGY8ZEDHYMGM99RF1RQ45YWY.tif/jcr:content/renditions/Reduced%20Res%202.png");
 
     const [loading, setLoading] = useState<boolean>(false);
@@ -30,6 +35,22 @@ export default function ImageView() {
 
     // Initialize viewer only when URL changes
     useEffect(() => {
+        // Create a top-level overlay root at the top of the DOM to ensure overlays sit above the viewer
+        if (!overlayRootRef.current) {
+            const root = document.createElement('div');
+            root.id = 'osd-top-overlay-root';
+            // cover the viewport, we'll position children absolutely in page coordinates
+            root.style.position = 'absolute';
+            root.style.top = '0';
+            root.style.left = '0';
+            root.style.width = '100%';
+            root.style.height = '100%';
+            root.style.pointerEvents = 'none';
+            root.style.zIndex = '9999';
+            document.body.appendChild(root);
+            overlayRootRef.current = root;
+        }
+
         if (!viewerRef.current) return;
 
         setLoading(true);
@@ -55,6 +76,8 @@ export default function ImageView() {
 
         viewer.addHandler('open', () => {
             setLoading(false);
+            // Clear any existing overlays (important when switching images)
+            try { viewer.clearOverlays(); } catch (e) { /* ignore */ }
             // Draw existing labels
             getLabels(urlentry).forEach(label => {
                 drawLabel(viewer, label);
@@ -66,44 +89,37 @@ export default function ImageView() {
             setLoading(false);
         });
 
-        // Handle click to add label
-        /*
-        viewer.addHandler('canvas-click', function(event: any) {
+        // Handle double-click to add label
+        viewer.addHandler('canvas-double-click', function(event: any) {
+            // Prevent the default zoom on double click
+            event.preventDefaultAction = true;
+
             const webPoint = event.position;
             const viewportPoint = viewer.viewport.pointFromPixel(webPoint);
             const imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-            const text = prompt("Enter label for this point:");
-            if (text) {
-                const newLabel = { x: imagePoint.x, y: imagePoint.y, text };
-                const updatedLabels = [...getLabels(urlentry), newLabel];
-                setLabels(updatedLabels);
+            const text = window.prompt("Enter label for this point:");
+            if (text && text.trim().length > 0) {
+                const newLabel: Label = { x: imagePoint.x, y: imagePoint.y, text: text.trim() };
+                const existing = getLabels(urlentry);
+                const updatedLabels = [...existing, newLabel];
                 saveLabels(urlentry, updatedLabels);
                 drawLabel(viewer, newLabel);
             }
         });
-*/
+
+        // Reposition overlays when the viewer viewport changes
+        viewer.addHandler('update-viewport', () => {
+            requestAnimationFrame(() => {
+                repositionOverlays(viewer);
+            })
+        });
         return () => {
             viewer.destroy();
             osdViewerRef.current = null;
         };
     }, [urlentry]);
 
-    // Update overlays when labels change (without reloading image)
-    /*
-    useEffect(() => {
-        const viewer = osdViewerRef.current;
-        if (!viewer) return;
-
-        // Remove all overlays
-        viewer.clearOverlays();
-
-        // Draw all labels
-        labels.forEach(label => {
-            drawLabel(viewer, label);
-        });
-    }, [labels]);
-    */
 
 // Draw label marker and text
     function drawLabel(viewer: any, label: Label) {
@@ -127,18 +143,51 @@ export default function ImageView() {
         textDiv.style.top = "14px";
         marker.style.zIndex = "1000";
         textDiv.innerText = label.text;
-        const canvas = document.getElementsByClassName("openseadragon-canvas")[0];
-        if (!canvas) return;
+        // Create container for overlay and let OpenSeadragon manage placement
         const container = document.createElement("div");
+        container.style.position = "absolute";
+        container.style.pointerEvents = "auto"; // allow interaction
+        container.style.zIndex = "10000";
         container.appendChild(marker);
         container.appendChild(textDiv);
 
-        canvas.appendChild(container);
-        viewer.addOverlay({
-            element: container,
-            location: new OpenSeadragon.Point(label.x, label.y),
-            placement: OpenSeadragon.Placement.CENTER
-        });
+        // Append to top-level overlay root so it's above the viewer container
+        const root = overlayRootRef.current;
+        if (!root) return;
+        root.appendChild(container);
+
+        // Track overlay so we can reposition on pan/zoom
+        overlaysRef.current.push({ label, element: container });
+
+        // Position immediately
+        positionOverlayForLabel(viewer, container, label);
+    }
+
+    function positionOverlayForLabel(viewer: any, element: HTMLElement, label: Label) {
+        try {
+            // Convert image coordinates to viewport coordinates
+            const imgPoint = new OpenSeadragon.Point(label.x, label.y);
+            const viewportPoint = viewer.viewport.imageToViewportCoordinates(imgPoint);
+            // Convert viewport coords to viewer element (pixels) coords
+            const viewerPoint = viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
+            const containerRect = (viewer && viewer.container) ? viewer.container.getBoundingClientRect() : { left: 0, top: 0 };
+
+            const pageX = containerRect.left + viewerPoint.x;
+            const pageY = containerRect.top + viewerPoint.y;
+
+            element.style.left = `${pageX - element.offsetWidth / 2}px`;
+            element.style.top = `${pageY - element.offsetHeight / 2}px`;
+        } catch (e) {
+            // ignore positioning errors
+        }
+    }
+
+    function repositionOverlays(viewer: any) {
+        const list = overlaysRef.current;
+        if (!list || !viewer) return;
+        for (const item of list) {
+            positionOverlayForLabel(viewer, item.element, item.label);
+        }
     }
     return (
         <Layout>
@@ -183,14 +232,7 @@ export default function ImageView() {
                 />
             </div>
             <div className="flex flex-col w-full">
-                <p className="text-white">Mode</p>
-            <select className="px-2
-                rounded-l-lg border border-gray-300
-                 focus:outline-none focus:ring-2
-                 focus:ring-purple-600 text-white width-full">
-                <option value="label" className="bg-black text-white">Label Mode (Coming Soon)</option>
-                <option value="view" className="bg-black text-white">View Mode</option>
-            </select>
+                <p className="text-white">Double click to Mark POI's in each image</p>
             </div>
             </div>
         </div>
