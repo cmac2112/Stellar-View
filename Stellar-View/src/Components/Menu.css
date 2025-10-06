@@ -1,0 +1,119 @@
+/* wondering why i have my own css and tailwinds at the same time? this is a custom component from my other project that i like to use
+ might turn it into a package library for my projects so i dont have to copy and paste things over*/
+.menu-modal {
+    position: fixed;
+    /* Default: center for fallback */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    border-radius: 2rem;
+    padding: 1rem;
+    box-shadow:
+            0 25px 60px rgba(0,0,0,0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(20px);
+    background: linear-gradient(135deg, #060f18, #250e54) padding-box,
+    linear-gradient(45deg, #1e90ff, #8a2be2) border-box;
+    width: fit-content;
+    animation: menuWipeDown 0.6s cubic-bezier(0.4, 0.8, 0.2, 1) forwards;
+}
+
+
+
+/* Small phone screens */
+@media (max-width: 600px) {
+    .menu-modal {
+        top: 15rem;
+        left: 50%;
+        right: auto;
+        transform: translate(-50%, -50%);
+        padding: 1.5rem 1rem;
+        border-radius: 1.5rem;
+
+    }
+    @keyframes menuWipeDown {
+        0% {
+            opacity: 0;
+            max-height: 0;
+            transform: translate(-50%, -200%) scaleY(1);
+        }
+        60% {
+            opacity: 0;
+            max-height: 800px;
+            transform: translate(-50%, -100%) scaleY(1);
+        }
+        100% {
+            opacity: 1;
+            max-height: 800px;
+            z-index: 1000;
+            transform: translate(-50%, -50%) scaleY(1);
+        }
+    }
+}
+
+/* Medium screens (tablets) */
+@media (min-width: 601px) and (max-width: 1024px) {
+    .menu-modal {
+        top: 5rem;
+        right: 2rem;
+        left: auto;
+        transform: none;
+        border-radius: 2rem;
+        padding: 2rem 1.5rem;
+    }
+    @keyframes menuWipeDown {
+        0% {
+            opacity: 0;
+            max-height: 0;
+            transform: translate(-20%, -80%) scaleY(1);
+        }
+        60% {
+            opacity: 1;
+            max-height: 800px;
+            transform: translate(-20%, 0%) scaleY(1);
+        }
+        100% {
+            opacity: 1;
+            max-height: 800px;
+            z-index: 1000;
+            transform: translate(-20%, 0%) scaleY(1);
+        }
+    }
+}
+
+/* Large screens (desktops) */
+@media (min-width: 1025px) {
+    .menu-modal {
+        top: 5rem;
+        right: 0.2rem; /* Adjust to match header button position */
+        left: auto;
+        transform: none;
+        border-radius: 2rem;
+        padding: 2rem 1.5rem;
+
+    }
+    @keyframes menuWipeDown {
+        0% {
+            opacity: 0;
+            max-height: 0;
+            transform: translate(-20%, -80%) scaleY(1);
+        }
+        60% {
+            opacity: 1;
+            max-height: 800px;
+            transform: translate(-20%, 0%) scaleY(1);
+        }
+        100% {
+            opacity: 1;
+            max-height: 800px;
+            z-index: 1000;
+            transform: translate(-20%, 0%) scaleY(1);
+        }
+    }
+}
