@@ -15,11 +15,7 @@ function getLabels(url: string): Label[] {
 function saveLabels(url: string, labels: Label[]) {
     localStorage.setItem(`labels_${url}`, JSON.stringify(labels));
 }
-/*
-function saveLabels(url: string, labels: Label[]) {
-    localStorage.setItem(`labels_${url}`, JSON.stringify(labels));
-}
-*/
+
 
 export default function ImageView() {
     const viewerRef = useRef(null);
@@ -30,16 +26,11 @@ export default function ImageView() {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const osdViewerRef = useRef<any>(null);
-    //const [labels, setLabels] = useState<Label[]>([]);
 
-
-    // Initialize viewer only when URL changes
     useEffect(() => {
-        // Create a top-level overlay root at the top of the DOM to ensure overlays sit above the viewer
         if (!overlayRootRef.current) {
             const root = document.createElement('div');
             root.id = 'osd-top-overlay-root';
-            // cover the viewport, we'll position children absolutely in page coordinates
             root.style.position = 'absolute';
             root.style.top = '0';
             root.style.left = '0';
@@ -78,6 +69,15 @@ export default function ImageView() {
             setLoading(false);
             // Clear any existing overlays (important when switching images)
             try { viewer.clearOverlays(); } catch (e) { /* ignore */ }
+            // Remove any overlays we appended to the top-level root so they don't persist across images
+            try {
+                if (overlaysRef.current && overlaysRef.current.length) {
+                    overlaysRef.current.forEach(o => {
+                        try { o.element.remove(); } catch (e) { /* ignore */ }
+                    });
+                    overlaysRef.current = [];
+                }
+            } catch (e) { /* ignore */ }
             // Draw existing labels
             getLabels(urlentry).forEach(label => {
                 drawLabel(viewer, label);
@@ -89,7 +89,6 @@ export default function ImageView() {
             setLoading(false);
         });
 
-        // Handle double-click to add label
         viewer.addHandler('canvas-double-click', function(event: any) {
             // Prevent the default zoom on double click
             event.preventDefaultAction = true;
@@ -115,15 +114,29 @@ export default function ImageView() {
             })
         });
         return () => {
+            // Clean up overlays we created
+            try {
+                if (overlaysRef.current && overlaysRef.current.length) {
+                    overlaysRef.current.forEach(o => { try { o.element.remove(); } catch (e) { /* ignore */ } });
+                    overlaysRef.current = [];
+                }
+            } catch (e) { /* ignore */ }
+
+            // Remove overlay root from DOM so overlays don't persist when leaving the page
+            try {
+                if (overlayRootRef.current) {
+                    overlayRootRef.current.remove();
+                    overlayRootRef.current = null;
+                }
+            } catch (e) { /* ignore */ }
+
             viewer.destroy();
             osdViewerRef.current = null;
         };
     }, [urlentry]);
 
 
-// Draw label marker and text
     function drawLabel(viewer: any, label: Label) {
-        //const overlayId = `label_${label.x}_${label.y}_${label.text}`;
         const marker = document.createElement("div");
         marker.style.position = "absolute";
         marker.style.display = "block";
@@ -156,7 +169,6 @@ export default function ImageView() {
         if (!root) return;
         root.appendChild(container);
 
-        // Track overlay so we can reposition on pan/zoom
         overlaysRef.current.push({ label, element: container });
 
         // Position immediately
