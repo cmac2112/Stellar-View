@@ -69,6 +69,7 @@ export default function ExperimentalImageView() {
     (async () => {
         const provider = await Cesium.createWorldImageryAsync();
         v.imageryLayers.addImageryProvider(provider);
+   })();
 
     viewerRef.current = v;
     v.camera.setView({
@@ -122,7 +123,7 @@ export default function ExperimentalImageView() {
         }
     });
     setViewer(v)
-    })();
+    
     viewerRef.current = v;
         return () => {
             viewerRef.current = null;
