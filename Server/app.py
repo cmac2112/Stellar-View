@@ -17,8 +17,9 @@ CORS(app)
 
 # LRU Cache for converted images (max 10 images)
 image_cache = OrderedDict()
-MAX_CACHE_SIZE = 8
+MAX_CACHE_SIZE = 7
 # Reject files larger than this (bytes). 300MB = 300 * 1024 * 1024
+#could multithread in the future
 MAX_BYTES = 300 * 1024 * 1024
 def get_cache_key(url):
     """Generate a unique cache key from URL"""

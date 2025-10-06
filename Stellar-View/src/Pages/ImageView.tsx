@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import OpenSeadragon from "openseadragon";
-import Layout from "../../Components/Layout";
-//maybe download all the images i need and serve them myself through flask
+import Layout from "../Components/Layout.tsx"
+
 type Label = {
     x: number;
     y: number;
@@ -20,8 +20,6 @@ function saveLabels(url: string, labels: Label[]) {
 
 export default function ImageView() {
     const viewerRef = useRef(null);
-    //const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/dynamicimage/assets/science/missions/hubble/galaxies/andromeda/Hubble_M31Mosaic_2025_42208x9870_STScI-01JGY8MZB6RAYKZ1V4CHGN37Q6.jpg");
-    //const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26276/PIA26276.tif");
     const [urlentry, setUrlEntry] = useState("https://assets.science.nasa.gov/content/dam/science/missions/hubble/releases/2025/01/STScI-01JGY8ZEDHYMGM99RF1RQ45YWY.tif/jcr:content/renditions/Reduced%20Res%202.png");
 
     const [loading, setLoading] = useState<boolean>(false);
@@ -144,6 +142,58 @@ export default function ImageView() {
     }
     return (
         <Layout>
+        <div
+            ref={viewerRef}
+            style={{
+                width: "100%",
+                height: "90vh",
+                background: "#000",
+            }}
+        />
+        <div className="bg-gray-950 max-w-full bg-opacity-50 px-4 justify-center items-center pointer-events-auto">
+            <div id="url selector">
+                <p className="text-white">Select an Image to view .TIFF format right in the browser! No need for special software</p>
+                <select
+                    onChange={(e) => setUrlEntry(e.target.value)}
+                    value={urlentry}
+                    className="px-2
+                rounded-l-lg border border-gray-300
+                 focus:outline-none focus:ring-2
+                 focus:ring-purple-600 text-white width-full">
+                    <option value="https://assets.science.nasa.gov/content/dam/science/missions/hubble/releases/2025/01/STScI-01JGY8ZEDHYMGM99RF1RQ45YWY.tif/jcr:content/renditions/Reduced%20Res%202.png" className="bg-black text-white">Andromeda Moasic</option>
+                    <option value="https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia26/pia26276/PIA26276.tif" className="bg-black text-white">Andromeda Infrared</option>
+                    <option value="https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_2k.tif" className="bg-black text-white">Hi-Res Moon Mosaic</option>
+                    <option value="https://esahubble.org/media/archives/images/original/heic0506a.tif" className="bg-black text-white">WhirlPool Galaxy</option>
+                    <option value="https://esahubble.org/media/archives/images/original/opo0328a.tif" className="bg-black text-white">Sombrero Galaxy</option>
+                    <option value="https://esahubble.org/media/archives/images/original/heic1814a.tif" className="bg-black text-white">Saturn and Mars</option>
+                </select>
+            </div>
+            <div className="flex">
+            <div className="flex flex-col w-full">
+            <p className="text-white">OR Enter URL For Any NASA .TIF or .PNG image</p>
+            <input
+                type="text"
+                value={urlentry}
+                onChange={(e) => setUrlEntry(e.target.value)}
+                placeholder="Enter Image URL"
+                className="px-2
+                rounded-l-lg border border-gray-300
+                 focus:outline-none focus:ring-2
+                 focus:ring-purple-600 text-white width-full"
+                />
+            </div>
+            <div className="flex flex-col w-full">
+                <p className="text-white">Mode</p>
+            <select className="px-2
+                rounded-l-lg border border-gray-300
+                 focus:outline-none focus:ring-2
+                 focus:ring-purple-600 text-white width-full">
+                <option value="label" className="bg-black text-white">Label Mode (Coming Soon)</option>
+                <option value="view" className="bg-black text-white">View Mode</option>
+            </select>
+            </div>
+            </div>
+        </div>
             {loading ? (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-75 text-white p-4 rounded">
                     Loading Image...
@@ -154,26 +204,7 @@ export default function ImageView() {
                     {error}
                 </div>
             ) : null}
-        <div
-            ref={viewerRef}
-            style={{
-                width: "100%",
-                height: "90vh",
-                background: "#000",
-            }}
-        />
-        <div className="bg-black bg-opacity-50 p-4 flex justify-center items-center pointer-events-auto">
-            <input
-                type="text"
-                value={urlentry}
-                onChange={(e) => setUrlEntry(e.target.value)}
-                placeholder="Enter Image URL"
-                className="p-2
-                rounded-l-lg border border-gray-300
-                 focus:outline-none focus:ring-2
-                 focus:ring-purple-600 text-white width-full"
-                />
-        </div>
+
         </Layout>
     );
 }
