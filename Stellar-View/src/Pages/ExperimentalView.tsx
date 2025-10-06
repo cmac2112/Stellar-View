@@ -10,7 +10,6 @@ import {getFormattedTime} from "./Helpers.tsx";
 import Layout from "../Components/Layout.tsx"
 import * as Cesium from "cesium";
 
-import type { GIBSLayerConfig } from "./ViewPage.tsx";
 // Define GIBS layers with their configurations
 const GIBS_LAYERS = {
     // GOES - 10 MINUTE updates! (Geostationary)
@@ -251,7 +250,7 @@ export default function ExperimentalImageView() {
 
 
         // Preload imagery provider into cache
-        const preloadImagery = (timeString: string, layerConfig: GIBSLayerConfig) => {
+        const preloadImagery = (timeString: string, layerConfig: any) => {
             const cacheKey = `${layerConfig.layer}-${timeString}-${resolution}`;
 
             if (preloadCacheRef.current.has(cacheKey)) {
