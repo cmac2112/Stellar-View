@@ -3,6 +3,9 @@
 # up to date code is on production branch, ran into some weird "production only" bugs and did a lot of stupid reverts in my delerious state of no sleep
 
 ## Summary
+
+<a href="stellarview.us">Live link</a>
+
 Stellar View brings satellite imagery and tools together to allow for
 exploring large datasets provided by our lovely NASA folks.
  - Explore the earth and its systems: Stellar View hits satellite API endpoints to bring
