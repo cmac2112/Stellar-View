@@ -19,7 +19,7 @@ const GIBS_LAYERS = {
         layer: "GOES-East_ABI_GeoColor",
         name: "GOES-East GeoColor (10min)",
         format: "image/png",
-        maxLevel: 9,
+        maxLevel: 4,
         description: "10-minute updates! Americas & Atlantic view",
         temporal: "10min",
     },
@@ -28,7 +28,7 @@ const GIBS_LAYERS = {
         layer: "GOES-West_ABI_GeoColor",
         name: "GOES-West GeoColor (10min)",
         matrix: "GoogleMapsCompatible_Level7",
-        maxLevel: 9,
+        maxLevel: 4,
         format: "image/png",
         description: "10-minute updates! Pacific & Americas view",
         temporal: "10min",
@@ -355,9 +355,9 @@ export default function ExperimentalImageView() {
             <div className="relative w-full h-screen bg-black">
                 <div ref={cesiumContainer} className="w-full h-full" />
 
-                <div className="absolute top-0 left-4 bg-black/90 text-white p-2 sm:p-2 rounded-lg space-y-3 w-1/3 max-w-xs sm:max-w-sm shadow-xl border border-gray-700">
+               <div className="absolute top-0 left-4 bg-black/90 text-white p-2 sm:p-2 rounded-lg space-y-3 w-1/3 max-w-xs sm:max-w-sm shadow-xl border border-gray-700">
                     <h3 className="font-bold text-base sm:text-xl text-blue-400">NASA GIBS Earth Viewer</h3>
-
+                    <p>Fullscreen Recommended for PC - Landscape Recommended for Mobile </p>
                     <div className="space-y-3">
                         <div>
                             <label className="block text-sm font-medium mb-1">
